@@ -32,12 +32,12 @@ div#main--container {
 
 div.card {
     width: 32%;
-    height: 300px;
+    height: 360px;
     margin: 5px;
 }
 
 div.card img {
-    height: 150px;
+    height: 220px;
 }
 
 div button.btn-info{
