@@ -151,7 +151,6 @@ function getCountrie(url){
 async function getCountriInfo(paramName) {
     const containerInfo = document.getElementById('container--info');
 
-    // Función para obtener la hora
     async function getTime(region, ciudad) {
         const url = `http://worldtimeapi.org/api/timezone/${region}/${ciudad}`;
         
@@ -168,7 +167,6 @@ async function getCountriInfo(paramName) {
         }
     }
 
-    // Función para obtener los datos meteorológicos
     async function getWeatherData(ciudad) {
         const apiKey = "ef6cedfdcad6f45b047948cc72981394";
         const url = `http://api.openweathermap.org/data/2.5/weather?q=${ciudad}&appid=${apiKey}&units=metric`;
@@ -187,7 +185,6 @@ async function getCountriInfo(paramName) {
         }
     }
 
-    // Función para actualizar la información del país
     async function updateInfo() {
         try {
             const response = await fetch(`https://restcountries.com/v3.1/name/${paramName}`);
