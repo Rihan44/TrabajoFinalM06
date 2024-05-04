@@ -26,6 +26,7 @@ if(container) {
 }
 
 async function getAllCountries(){
+
     title.innerHTML = "Todos los paises";
     await fetch('https://restcountries.com/v3.1/all')
         .then((resp) => {
@@ -147,16 +148,57 @@ function getCountrie(url){
     location.href = url;
 }
 
-async function getCountriInfo(paramName){
+async function getCountriInfo(paramName) {
     const containerInfo = document.getElementById('container--info');
 
-    await fetch(`https://restcountries.com/v3.1/name/${paramName}`)
-        .then((resp) => {
-            return resp.json();
-        })
-        .then((data) => {
+    // Función para obtener la hora
+    async function getTime(region, ciudad) {
+        const url = `http://worldtimeapi.org/api/timezone/${region}/${ciudad}`;
+        
+        try {
+            const response = await fetch(url);
+            if (!response.ok) {
+                throw new Error('Error al obtener la hora de la ciudad');
+            }
+            const data = await response.json();
+            const hora = new Date(data.datetime).toLocaleTimeString('es-ES', { hour12: false, hour: '2-digit', minute: '2-digit' });
+            return hora;
+        } catch (error) {
+            return 'No está disponible la hora de esta capital';
+        }
+    }
+
+    // Función para obtener los datos meteorológicos
+    async function getWeatherData(ciudad) {
+        const apiKey = "ef6cedfdcad6f45b047948cc72981394";
+        const url = `http://api.openweathermap.org/data/2.5/weather?q=${ciudad}&appid=${apiKey}&units=metric`;
+
+        try {
+            const response = await fetch(url);
+            if (!response.ok) {
+                throw new Error('Error al obtener los datos meteorológicos');
+            }
+            const data = await response.json();
+            const temperatura = data.main.temp;
+            const descripcionClima = data.weather[0].description;
+            return { temperatura, descripcionClima };
+        } catch (error) {
+            return 'No está disponible el clima de la capital del pais';
+        }
+    }
+
+    // Función para actualizar la información del país
+    async function updateInfo() {
+        try {
+            const response = await fetch(`https://restcountries.com/v3.1/name/${paramName}`);
+            if (!response.ok) {
+                throw new Error('Error al obtener la información del país');
+            }
+            const data = await response.json();
             let content = ''; 
-            if(data.status !== 404) {
+            if (data.status !== 404) {
+                const hora = await getTime(data[0].region, data[0].capital[0]);
+                const weatherData = await getWeatherData(data[0].capital[0]);
                 content += `
                     <div class="card--info d-flex shadow-lg">
                         <img src="${data[0].flags.png}" class="card-img-info" alt="${data[0].flags.alt}">
@@ -164,6 +206,9 @@ async function getCountriInfo(paramName){
                             <h4 id="name--info">Nombre: <strong>${data[0].name.common}</strong></h4>
                             <h5 id="oficial--info">Nombre Oficial: <strong>${data[0].name.official}</strong></h5>
                             <p>Capital: <strong>${data[0].capital[0]}</strong></p>
+                            <p id="hora--info">Hora: <strong>${hora}</strong></p>
+                            <p id="tiempo--info">Tiempo: <strong>${weatherData.descripcionClima}</strong></p>
+                            <p>Temperatura: <strong>${weatherData.temperatura}°C</strong></p>
                             <p>Idiomas: <strong>${Object.values(data[0].languages)[0]}</strong></p>
                             <p>Region: <strong>${data[0].region}</strong></p>
                             <p id="subregion--info">Subregion: <strong>${data[0].subregion}</strong></p>
@@ -171,21 +216,22 @@ async function getCountriInfo(paramName){
                                 `<p id="description--info" class="info--description"><strong>${data[0].flags.alt}</strong></p>`
                                 :`<p id="description--info" class="text-danger"><strong>${data[0].flags.alt ? data[0].flags.alt : 'Esta bandera no tiene descripción'}</strong></p>`
                             }
-                            <button type="button" class="btn btn-info" onclick="toCountrie('${data[0].maps.googleMaps}')">Ir a la ubicación</button>
-                            <button type="button" class="btn btn-success mt-2" onclick="translateText('${data[0].name.common}','${data[0].flags.alt ? data[0].flags.alt : 'Esta bandera no tiene descripción'}', '${data[0].name.official}', '${data[0].subregion}')">Traducir</button>
+                            <button type="button" class="btn btn-info" onclick="toCountrie('${data[0].maps.googleMaps}')">Mostrar ubicación país</button>
+                            <button type="button" class="btn btn-success mt-2" onclick="translateText('${data[0].name.common}','${data[0].flags.alt ? data[0].flags.alt : 'Esta bandera no tiene descripción'}', '${data[0].name.official}', '${data[0].subregion}', '${weatherData.descripcionClima}')">Traducir</button>
                         </div>
                     </div>
                 `;
             } else {
                 content = `<h3 class="text-center container mt-2">No existe un país por ese nombre...</h3> `;
             }
-           
             containerInfo.innerHTML = content;
-        })
-        .catch((err) => {
+        } catch (err) {
             console.log(err);
             container.innerHTML = `<h3 class="text-center container mt-2 text-danger-emphasis">Ha habido un error en el búsqueda</h3>`;
-        });
+        }
+    }
+
+    updateInfo();
 }
 
 function toCountrie(url){
@@ -222,21 +268,22 @@ async function getTranslation(text, targetLang){
     }
 }
 
-async function translateText(nombre, descripcion, oficial, subregion) {
+async function translateText(nombre, descripcion, oficial, subregion, tiempo) {
     const name = await getTranslation(nombre, 'es');
     const description = await getTranslation(descripcion, 'es');
     const oficialName = await getTranslation(oficial, 'es');
     const subregionCountry = await getTranslation(subregion, 'es');
+    const tiempoCountry = await getTranslation(tiempo, 'es');
 
     const nameInfo = document.getElementById("name--info");
     const descriptionInfo = document.getElementById("description--info");
     const oficialInfo = document.getElementById("oficial--info");
     const subregionInfo = document.getElementById("subregion--info");
+    const tiempoInfo = document.getElementById("tiempo--info");
 
     nameInfo.innerHTML = `Nombre: <strong>${name}</strong>`;
     descriptionInfo.innerHTML = `<strong>${description}</strong>`;
     oficialInfo.innerHTML = `Nombre Oficial: <strong>${oficialName}</strong>`;
     subregionInfo.innerHTML = `Subregion: <strong>${subregionCountry}</strong>`;
+    tiempoInfo.innerHTML = `Tiempo: <strong>${tiempoCountry}</strong>`;
 }
-
-
